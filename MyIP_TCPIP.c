@@ -588,11 +588,11 @@ uint16_t MyIP_revcfrom(uint16_t sockfd,const uint8_t *data,uint16_t MaxLen)
 {
 	uint16_t NetNum = sizeof(MyNet)/sizeof(MyNet[0]);
 	if( (sockfd>=NetNum) || (sockfd<1) )
-		return 1;
+		return 0;
 	
 	//连接未初始化
 	if(0 == MyNet[sockfd].Net_Flg.reg.Used)
-		return 2;
+		return 0;
 	
 	//从对应的socket队列中读取数据
 	
