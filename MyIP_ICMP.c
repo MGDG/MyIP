@@ -138,50 +138,8 @@ static uint8_t Send_ICMP_Ping_Back_Bag(LINKSTRUCT *node,const uint8_t *data,uint
   * @return	bool	
   * @remark	发送ping之前需要知道对方的MAC地址，如果MAC地址为空则需要ARP
   */
-//uint8_t Send_Ping_Bag(LINKSTRUCT *node,const uint8_t *Re_IP)
 uint8_t Send_Ping_Bag(const uint8_t *Re_IP,const uint8_t *Re_MAC)
 {
-#if 0
-	if(node == NULL || Re_IP == NULL)
-		return 1;	
-	
-	//以太网帧头打包，类型 0 IP类型
-	if(!EN_Head_Pack(node,node->Re_MAC,My_MAC,0x00))
-		return 2;
-	
-	//组ICMP_Ping request包
-	//回显，ICMP类型8代码0：请求应答（ping请求）
-	if(!ICMP_Head_Pack(node,NULL,0,8,0))
-		return 3;
-	
-	//组IP头
-	//IP包总长度位：sizeof(PingData)+20IP帧头
-	node->IP_TTL = 128;
-//	if(!IP_Head_Pack(node,node->Re_IP,2,60))
-	if(!IP_Head_Pack(node,Re_IP,2,60))
-		return 4;
-	
-	//发送ICMP_Ping包
-	ICMP_Ping_Packet_Send(node->EN_Head,node->IP_Head,node->ICMP_Data,40);
-	
-#if 0	
-	ICMP_DEBUGOUT("en head: ");
-	for(uint8_t i=0;i<14;i++)
-		ICMP_DEBUGOUT("%02X ",node->EN_Head[i]);
-	ICMP_DEBUGOUT("\r\n");
-	
-	ICMP_DEBUGOUT("ip head: ");
-	for(uint8_t i=0;i<20;i++)
-		ICMP_DEBUGOUT("%02X ",node->IP_Head[i]);
-	ICMP_DEBUGOUT("\r\n");
-	
-	ICMP_DEBUGOUT("icmp head: ");
-	for(uint8_t i=0;i<sizeof(PingData);i++)
-		ICMP_DEBUGOUT("%02X ",node->ICMP_Data[i]);
-	ICMP_DEBUGOUT("\r\n");
-#endif
-	return 0;
-#else
 	LINKSTRUCT temp;
 	if(Re_MAC == NULL || Re_IP == NULL)
 		return 1;	
@@ -204,7 +162,6 @@ uint8_t Send_Ping_Bag(const uint8_t *Re_IP,const uint8_t *Re_MAC)
 	ICMP_Ping_Packet_Send(temp.EN_Head,temp.IP_Head,temp.ICMP_Data,40);
 	
 	return 0;
-#endif
 }
 
 

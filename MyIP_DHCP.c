@@ -234,7 +234,7 @@ static uint8_t DHCP_GetMsgType(const uint8_t *data,uint16_t len)
 	if(len < 8)
 		return 0;
 
-	for(uint16_t i=4;i<len-1;)
+	for(uint16_t i=4;i<len-2;)
 	{
 		if(data[i]==0x35 && data[i+1]==0x01)
 		{
@@ -415,7 +415,7 @@ uint8_t DHCP_Data_Process(const uint8_t *data,uint16_t len)
 
 /**
   * @brief	ip租期处理
-* @param	ElapsedTime：每次调用该函数时，已经度过的时间
+  * @param	ElapsedTime：每次调用该函数时，已经度过的时间
 
   * @return	void	
   * @remark 1、在使用租期到50%后，client向server单播发送DHCPREQUEST，延续租期。
@@ -443,7 +443,7 @@ void DHCP_LeaseTime_Proc(uint32_t ElapsedTime)
 		}
 	}
 	//大于百分87.5
-	else if(Lease_Time_Count > ((IP_Lease_Time>1) + ((IP_Lease_Time>1)>1)) )		
+	else if(Lease_Time_Count > ((IP_Lease_Time>1) + (IP_Lease_Time>2)) )		
 	{
 		if(flg != 2)
 		{
