@@ -17,30 +17,18 @@ union ARP_FLG
 	struct 
 	{
 		uint8_t ActivFlg		:1;			//该连接是否已经被使用
-
 	}reg;
 	uint8_t flg;
 };
 
 struct
 {
+	uint32_t LiveTime;			//该记录已存活时间，超过规定时间需要刷新重新获取
 	uint8_t IP[4];				//记录IP地址
 	uint8_t MAC[6];				//记录对应的MAC地址
 	union ARP_FLG Flg;			//各个状态标记
-	uint32_t LiveTime;			//该记录已存活时间，超过规定时间需要刷新重新获取
 }ARP_Cache[10];					//可存放的缓存数量
-/*
-//ARP缓存表结构体定义
-typedef struct
-{
-	uint8_t IP[4];				//记录IP地址
-	uint8_t MAC[6];				//记录对应的MAC地址
-	union ARP_FLG Flg;			//各个状态标记
-	uint32_t LiveTime;			//该记录已存活时间，超过规定时间需要刷新重新获取
-}ARP_CACHE_TYDEF;
 
-ARP_CACHE_TYDEF ARP_Cache[10];	//可存放的缓存数量
-*/
 
 /**
   * @brief	判断远程ip是否为局域网
@@ -181,59 +169,6 @@ bool ARPCache_Write(const uint8_t *ip,const uint8_t *MAC)
 	{
 		return false;
 	}
-	
-#if 0	
-	//不存在，查找未使用的位置并记录进去
-	for(uint16_t i=0;i<CacheNum;i++)
-	{
-		if(ARP_Cache[i].Flg.reg.ActivFlg == 0)
-		{
-			//写入缓存
-			memcpy(ARP_Cache[i].IP,ip,4);
-			memcpy(ARP_Cache[i].MAC,MAC,6);
-			
-			//检查写入是否正确
-			if( (memcmp(ip,ARP_Cache[i].IP,4) == 0) && (memcmp(MAC,ARP_Cache[i].MAC,6) == 0) )
-			{
-				ARP_Cache[i].Flg.reg.ActivFlg = 1;
-				ARP_Cache[i].LiveTime = 0;
-				return true;
-			}
-			else
-			{
-				return false;
-			}
-		}
-	}
-	
-	//没找到未使用的缓存位置，则将记录时间最长的一个替换掉
-	uint32_t MaxTime = ARP_Cache[0].LiveTime;
-	uint16_t index = 0;
-	for(uint16_t i=1;i<CacheNum;i++)
-	{
-		if(ARP_Cache[i].LiveTime > MaxTime)
-		{
-			MaxTime = ARP_Cache[i].LiveTime;
-			index = i;
-		}
-	}
-	
-	//写入缓存
-	memcpy(ARP_Cache[index].IP,ip,4);
-	memcpy(ARP_Cache[index].MAC,MAC,6);
-	
-	//检查写入是否正确
-	if( (memcmp(ip,ARP_Cache[index].IP,4) == 0) && (memcmp(MAC,ARP_Cache[index].MAC,6) == 0) )
-	{
-		ARP_Cache[index].Flg.reg.ActivFlg = 1;
-		ARP_Cache[index].LiveTime = 0;
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-#endif	
 }
 
 /**
@@ -408,42 +343,9 @@ void ARP_Request(const uint8_t *Re_IP)
 {
 	if(Re_IP == NULL)
 		return;
-#if 0	
-
-	//目的地MAC位置，默认为0
-//	uint8_t Re_MAC[6] = {0x00,0x00,0x00,0x00,0x00,0x00};
-	uint8_t Re_MAC[6] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
-	
-	//以太网帧头打包，目的MAC为广播MAC,类型 06 ARP包
-//	EN_Head_Pack(node,My_MACIP,My_MAC,0x06);
-	EN_Head_Pack(&MyNet[0],My_MACIP,My_MAC,0x06);
-	
-	//ARP帧头打包，类型 1请求
-//	if(Is_LAN(node->Re_IP))
-//	if(Is_LAN(MyNet[0].Re_IP))	
-	if(Is_LAN(Re_IP))	
-	{
-		//内网
-//		ARP_Head_Pack(node,1,My_MAC,MyIP_LoaclIP,Re_MAC,node->Re_IP);
-//		ARP_Head_Pack(&MyNet[0],1,My_MAC,MyIP_LoaclIP,Re_MAC,MyNet[0].Re_IP);
-		ARP_Head_Pack(&MyNet[0],1,My_MAC,MyIP_LoaclIP,Re_MAC,Re_IP);
-	}
-	else
-	{
-		//外网，IP为默认网关,获取路由器的MAC
-//		ARP_Head_Pack(node,1,My_MAC,MyIP_LoaclIP,Re_MAC,MyIP_GateWay);
-		ARP_Head_Pack(&MyNet[0],1,My_MAC,MyIP_LoaclIP,Re_MAC,MyIP_GateWay);
-	}
-
-	//发送数据包
-//	ARP_Packet_Send(node->EN_Head,node->ARP_Head);
-	ARP_Packet_Send(MyNet[0].EN_Head,MyNet[0].ARP_Head);
-	
-//	node->Cur_Stat = ARP_REQUEST;
-#else
 	
 	LINKSTRUCT temp;
-	//目的地MAC位置，默认为0
+	//目的地MAC位置，默认为0，实测为0xFF也可以
 	uint8_t Re_MAC[6] = {0x00,0x00,0x00,0x00,0x00,0x00};
 	
 	//以太网帧头打包，目的MAC为广播MAC,类型 06 ARP包
@@ -464,33 +366,8 @@ void ARP_Request(const uint8_t *Re_IP)
 	//发送数据包
 	ARP_Packet_Send(temp.EN_Head,temp.ARP_Head);
 
-#endif
 }
 
-#if 0
-/**
-  * @brief	判断当前是谁在ARP
-  * @param	*NetIndex: 本地连接序号
-  * @param	*Re_ip: 远程IP
-
-  * @return	bool	
-  * @remark		
-  */
-static bool WhoIsInTheARP(uint16_t *NetIndex,const uint8_t *Re_ip)
-{
-	uint16_t NetNum = sizeof(MyNet)/sizeof(MyNet[0]);
-	
-	for(uint16_t i=0;i<NetNum;i++)
-	{
-		if(memcmp(Re_ip,MyNet[i].Re_IP,4) == 0)
-		{
-			*NetIndex = i;
-			return true;
-		}
-	}
-	return false;
-}
-#endif
 
 /**
   * @brief	ARP数据处理
@@ -578,56 +455,6 @@ uint8_t ARP_Data_Process(const uint8_t *data,uint16_t len)
 				MyNet[i].Net_Flg.reg.ARPOK = 1;
 			}
 		}
-#if 0		
-		//查询当前谁在ARP，并且IP符合
-		//data+14： 发送方的IP地址
-		if(memcmp(data+14+14,MyIP_GateWay,4) == 0)	//如果为网关IP
-		{
-			uint16_t NetNum = sizeof(MyNet)/sizeof(MyNet[0]);
-			for(uint16_t i=0;i<NetNum;i++)
-			{
-//				if(MyNet[i].Net_Type & CLIENT)		//如果为客户端
-//				{
-//					if(!Is_LAN(&MyNet[i]))			//如果是外网
-					if(!Is_LAN(MyNet[i].Re_IP))			//如果是外网
-					{
-						//实际测试路由器会返回两次，说明局域网内有网卡在冒充网关，该网卡MAC 48-7D-2E-04-28-36
-						//第二次返回才是对的MAC
-						//所以此处不判断当前状态了
-//						if(MyNet[i].Cur_Stat == ARP_REQUEST)	//且正在ARP，则改为ARP_ANSWER，多个连接是外网时，只需要一次ARP
-//						{
-							//复制远程MAC到连接0
-							MyNetConfig_ReMAC(&MyNet[i],data+14+8);
-//							MyNet[i].Cur_Stat = ARP_ANSWER;		//ARP结束
-//							MyNet[i].Net_Flg.reg.ARPOK = 1;		//ARP成功
-							MyNet[i].Net_Flg.ARPOK = 1;		//ARP成功
-							ARP_DEBUGOUT("Get ARP MAC(%d): %02X-%02X-%02X-%02X-%02X-%02X\r\n",i,data[22],data[23],data[24],data[25],data[26],data[27]);
-							break;
-//						}
-					}
-//				}
-			}
-		}
-		else
-		{
-			//收到对方的ARP应答后要确定是哪个连接在查询对方ARP，再将对方MAC存如哪个连接
-			//检查所有连接，将对方MAC存入IP地址相同的连接当中
-			uint16_t NetIndex;
-			
-			if(!WhoIsInTheARP(&NetIndex,(data+28)))
-				return 3;										//没人在发ARP查询报文
-
-			//如果是正在进行ARP，则结束当前连接的ARP
-//			if(MyNet[NetIndex].Cur_Stat == ARP_REQUEST)
-//			{
-				MyNet[NetIndex].Net_Flg.ARPOK = 1;		//ARP成功
-//				MyNet[NetIndex].Cur_Stat = ARP_ANSWER;
-				MyNetConfig_ReMAC(&MyNet[NetIndex],data+14+8);
-				
-				ARP_DEBUGOUT("get mac\r\n");
-//			}
-		}
-#endif
 	}
 	//RARP请求
 	else if(ARP_Type == 3)
