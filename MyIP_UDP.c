@@ -88,10 +88,10 @@ static bool UDP_Data_Check(const uint8_t *data,uint16_t len)
 	uint16_t UDP_Data_Len = (((uint16_t)(data[38]<<8))|data[39])-8;
 	
 	//计算校验和
-	uint32_t sum = TCPIP_Check_Sum((uint16_t *)(UDP_False),12);		//UDP伪首部12
-	sum += TCPIP_Check_Sum((uint16_t *)(UDP_Head),8);				//UDP首部8
-	sum += TCPIP_Check_Sum((uint16_t *)(&data[42]),UDP_Data_Len);	//数据部分，偏移指针14+20+8
-	uint16_t tem = TCPIP_Check_Code(sum);
+	uint32_t sum = MyIP_CheckSum((uint16_t *)(UDP_False),12);		//UDP伪首部12
+	sum += MyIP_CheckSum((uint16_t *)(UDP_Head),8);				//UDP首部8
+	sum += MyIP_CheckSum((uint16_t *)(&data[42]),UDP_Data_Len);	//数据部分，偏移指针14+20+8
+	uint16_t tem = MyIP_CheckCode(sum);
 	
 	return (tem == GetSum);
 }
@@ -138,10 +138,10 @@ static bool UDP_Head_Pack(LINKSTRUCT *node,const UDPSTRUCT *udp,const uint8_t *d
 
 
 	//计算检验和
-	uint32_t sum = TCPIP_Check_Sum((uint16_t *)(UDP_False),12);		//TCP伪首部12
-	sum += TCPIP_Check_Sum((uint16_t *)(node->UDP_Head),8);				//TCP首部20
-	sum += TCPIP_Check_Sum((uint16_t *)data,len);							//TCP首部20
-	uint16_t tem = TCPIP_Check_Code(sum);									//计算溢出位
+	uint32_t sum = MyIP_CheckSum((uint16_t *)(UDP_False),12);		//TCP伪首部12
+	sum += MyIP_CheckSum((uint16_t *)(node->UDP_Head),8);				//TCP首部20
+	sum += MyIP_CheckSum((uint16_t *)data,len);							//TCP首部20
+	uint16_t tem = MyIP_CheckCode(sum);									//计算溢出位
 
 	node->UDP_Head[6]=tem;
 	node->UDP_Head[7]=tem>>8;							//检验和稍后补充
@@ -232,18 +232,25 @@ uint8_t UDP_Data_Process(const uint8_t *data,uint16_t len)
 
 	if(RPort==67 && LPort==68)
 	{
+#if USE_DHCP==1
 		//该数据包为DHCP
 		return DHCP_Data_Process(data,len);
+#else
+		return 0;
+#endif
 	}
 
-	if(!TCPIP_Check_Socket((UDP_CLIENT|UDP_SERVER),LPort,&LinkIndex))
+	if(!MyIP_CheckSocket((UDP_CLIENT|UDP_SERVER),LPort,&LinkIndex))
 	{
 //		UDP_DEBUGOUT("local port not found\r\n");
 		return 2;
 	}
 	
 	//实际数据长度
-	uint16_t datalen = (((uint16_t)(data[16]<<8))|data[17])-28;	
+	uint16_t datalen = (((uint16_t)(data[16]<<8))|data[17]);
+	if(datalen < 28)
+		return 3;
+	datalen -= 28;
 	
 	//实际数据从data+42开始，长度为DataLen
 	UDP_Data_Recev(LinkIndex,data+42,datalen);

@@ -15,6 +15,7 @@
 bool ARPCache_Read(const uint8_t *ip,uint8_t *OutMAC);
 bool ARPCache_Write(const uint8_t *ip,const uint8_t *MAC);
 bool ARPCache_Delete(const uint8_t *ip);
+void MyIP_ARPCacheRefresh(void);
 void ARPCache_Printf(void);
 
 void ARP_Request(const uint8_t *Re_IP);

@@ -53,16 +53,16 @@
 //enum NET_STAT Cur_DHCPStat = CLOSE;
 bool DHCP_FinishFlg = false;
 static bool ReRequestFlg = false;
-static uint32_t Lease_Time_Count;
-uint32_t IP_Lease_Time = 2*60*60;							//IP租约时间，单位s，默认设为2个小时
+static uint32_t IP_Geted_Time;											//记录获取到IP的时间，单位s
+uint32_t IP_Lease_Time = 2*60*60;										//IP租约时间，单位s，默认设为2个小时
 static uint8_t DHCP_Server_IP[4]={0,0,0,0};								//从DHCP服务器获取到的服务器ip
-//static uint8_t DHCP_Client_IP[4]={0,0,0,0};								//从DHCP服务器获取到的客户端ip
+//static uint8_t DHCP_Client_IP[4]={0,0,0,0};							//从DHCP服务器获取到的客户端ip
 static const uint8_t Transaction_ID[4] = {0x45,0x78,0x33,0xF5};			//随机字
-static uint8_t DHCP_Option[]={0x63,0x82,0x53,0x63,				//Magic cookie: DHCP,为了与BOOTP兼容
-									0x35,0x01,0x00,						//Option: (35)DHCP Msg Type
-									0x0c,0x0d,0x4d,0x47,0x44,0x47,0x5f,0x4d,0x79,0x54,0x43,0x50,0x2F,0x49,0x50,		//Option: (12) Host Name 
-									0x32,0x04,0x00,0x00,0x00,0x00		//Option: (50) Requested IP Address
-									};
+static uint8_t DHCP_Option[]={0x63,0x82,0x53,0x63,						//Magic cookie: DHCP,为了与BOOTP兼容
+							  0x35,0x01,0x00,							//Option: (35)DHCP Msg Type
+							  0x0c,0x0d,0x4d,0x47,0x44,0x47,0x5f,0x4d,0x79,0x54,0x43,0x50,0x2F,0x49,0x50,		//Option: (12) Host Name 
+							  0x32,0x04,0x00,0x00,0x00,0x00				//Option: (50) Requested IP Address
+							  };
 
 /**
   * @brief	发送DHCP Discover
@@ -274,7 +274,7 @@ static void DHCP_GetOption(const uint8_t *data,uint16_t len)
 		if(data[i]==0x33 && data[i+1]==0x04)
 		{
 			IP_Lease_Time = (((uint32_t)data[i+2])<<24) | (((uint32_t)data[i+3])<<16) | (((uint32_t)data[i+4])<<8) | (data[i+5]);
-			Lease_Time_Count = 0;
+			IP_Geted_Time = MyIP_GetNowTime();			//记录获取到IP时的时间
 //			DHCP_DEBUGOUT("DHCP ack IP Addr Lease Time: %u s\r\n",IP_Lease_Time);
 		}
 		//获取子网掩码
@@ -423,17 +423,18 @@ uint8_t DHCP_Data_Process(const uint8_t *data,uint16_t len)
   * @remark 3、client单播请求没有被同意，在租期过去87.5％时刻处，client向server广播发送
   * @remark 4、server若同意，则发送DHCPACK，client开始一个新的租用周期；若不同意，则发送DHCPNAK，租期到期后，client放弃这个IP，重新获取IP。
   */
-void DHCP_LeaseTime_Proc(uint32_t ElapsedTime)
+void MyIP_IPLeaseTimeProc(void)
 {
 	static uint8_t flg = 0;
+	uint32_t ElapsedTime;
 
 	if(!DHCP_FinishFlg)
 		return;
 	
-	Lease_Time_Count += ElapsedTime;
+	ElapsedTime = MyIP_GetElapsedTime(IP_Geted_Time);
 	
 	//租约到期，重新获取IP地址
-	if(Lease_Time_Count >= IP_Lease_Time)
+	if(ElapsedTime >= IP_Lease_Time)
 	{
 		if(flg != 1)
 		{
@@ -443,7 +444,7 @@ void DHCP_LeaseTime_Proc(uint32_t ElapsedTime)
 		}
 	}
 	//大于百分87.5
-	else if(Lease_Time_Count > ((IP_Lease_Time>1) + (IP_Lease_Time>2)) )		
+	else if(ElapsedTime > ((IP_Lease_Time>1) + (IP_Lease_Time>2)) )		
 	{
 		if(flg != 2)
 		{
@@ -454,11 +455,11 @@ void DHCP_LeaseTime_Proc(uint32_t ElapsedTime)
 		}
 	}
 	//大于百分50
-	else if(Lease_Time_Count > (IP_Lease_Time>1))		
+	else if(ElapsedTime > (IP_Lease_Time>1))		
 	{
 		if(flg != 3)
 		{
-			flg = 4;
+			flg = 3;
 			//单播发送
 			DHCP_Send_Request(1);
 			ReRequestFlg = true;

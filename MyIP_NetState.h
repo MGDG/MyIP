@@ -11,6 +11,6 @@
 #define _MYIP_NETSTATE_H
 #include "MyIP_TCPIP.h"
 
-void My_NetState(void);
+void MyIP_NetState(void);
 
 #endif

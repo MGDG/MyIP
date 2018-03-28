@@ -85,6 +85,7 @@ union NET_FLG
 		uint8_t KeepAlive	:1;			//keep_alive使能标志位
 		uint8_t Data_Sent	:1; 		//收到数据
 		uint8_t Data_Recv	:1; 		//发送数据
+		uint8_t Wait_Ack	:1;			//等待对方应答
 	}reg;
 	uint8_t flg;
 };
@@ -126,7 +127,7 @@ struct SocketAddr
 extern LINKSTRUCT MyNet[3];
 
 void MyIP_Init(void);
-uint16_t GetLocalPort(void);
+uint16_t MyIP_GetLocalPort(void);
 
 /**
   * @brief	刷新连接的远程IP
@@ -148,14 +149,14 @@ bool MyNetConfig_ReIP(LINKSTRUCT *node,const uint8_t *ipbuf);
   */
 bool MyNetConfig_ReMAC(LINKSTRUCT *node,const uint8_t *macbuf);
 
-uint32_t TCPIP_Check_Sum(const uint16_t *p,uint16_t len);
-uint16_t TCPIP_Check_Code(uint32_t sum);
-bool TCPIP_Check_Socket(uint8_t Protocol,uint16_t Lport,uint16_t *NetIndex);
+uint32_t MyIP_CheckSum(const uint16_t *p,uint16_t len);
+uint16_t MyIP_CheckCode(uint32_t sum);
+bool MyIP_CheckSocket(uint8_t Protocol,uint16_t Lport,uint16_t *NetIndex);
 
 void MyIP_Run(void);
-void MyTCPIPTime_Refresh(void);
-uint32_t MyTCPIPTime_GetNowTime(void);
-uint32_t MyTCPIPTime_GetElapsedTime(uint32_t PreTime);
+void MyIP_TimeRefresh(void);
+uint32_t MyIP_GetNowTime(void);
+uint32_t MyIP_GetElapsedTime(uint32_t PreTime);
 
 uint16_t MyIP_Socket(uint8_t Protocol);
 int MyIP_Bind(uint16_t sockfd,uint16_t LcPort);

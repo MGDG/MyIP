@@ -13,6 +13,7 @@
 #include "MyIP_UDP.h"
 #include "MyIP_ICMP.h"
 #include "MyIP_IP.h"
+#include "MyIP_DHCP.h"
 #include "MyIP_NetState.h"
 
 //时间
@@ -20,7 +21,7 @@ static volatile uint32_t MyTCPIPTime_Sec = 0;			//时间，每格一秒需要加
 //相关参数设置,指定IP
 uint8_t My_MACIP[6]={255,255,255,255,255,255};//广播地址
 uint8_t My_MAC[6]={0xAB,0xCD,0X34,0X56,0XAB,0XCD};//MAC
-#if 1
+#if USE_DHCP==1
 uint8_t MyIP_LoaclIP[4]={0,0,0,0};//本地IP地址
 uint8_t MyIP_SubnetMask[4]={0,0,0,0};//子网掩码
 uint8_t MyIP_GateWay[4]={0,0,0,0}; //默认网关
@@ -87,29 +88,29 @@ void MyIP_Init(void)
   * @brief	获取一个本地端口，不能重复
   * @param	void
 
-  * @return	本地端口号	
-  * @remark	所指的端口是相对与本地连接来说的
+  * @return	本地端口号 10001~29999
+  * @remark
   */
-uint16_t GetLocalPort(void)
+uint16_t MyIP_GetLocalPort(void)
 {
-	static uint16_t tPort=0;
+	static uint16_t TempPort=0;
 	uint16_t i;
-	if(++tPort>20000)						//0~19999之间变化
+	if(++TempPort>20000)						//0~19999之间变化
 	{
-		tPort=0;							//如果第一轮端口端口号已经分配完成
+		TempPort=0;							//如果第一轮端口端口号已经分配完成
 		uint16_t NetNum = sizeof(MyNet)/sizeof(MyNet[0]);
 		while(1)
 		{
 			for(i=0;i<NetNum;i++)
 			{
-				if(MyNet[i].Lc_Port==tPort+10000)
+				if(MyNet[i].Lc_Port==TempPort+10000)
 					break;					//已存在
 			}
 			if(i>=NetNum)break;				//不存在，则直接退出
-			else tPort++;					//存在，则加1，再退出
+			else TempPort++;					//存在，则加1，再退出
 		}
 	}
-	return 10000+tPort;
+	return 10000+TempPort;
 }
 
 /**
@@ -157,7 +158,7 @@ bool MyNetConfig_ReMAC(LINKSTRUCT *node,const uint8_t *macbuf)
   * @return	32位累加和	
   * @remark		
   */
-uint32_t TCPIP_Check_Sum(const uint16_t *p,uint16_t len)
+uint32_t MyIP_CheckSum(const uint16_t *p,uint16_t len)
 {
 	uint16_t tem;
 	uint32_t checkcode=0;			//检验和
@@ -201,7 +202,7 @@ uint32_t TCPIP_Check_Sum(const uint16_t *p,uint16_t len)
   * @return	16位和校验值	
   * @remark		
   */
-uint16_t TCPIP_Check_Code(uint32_t sum)
+uint16_t MyIP_CheckCode(uint32_t sum)
 {
 //	uint16_t tem;
 //	//如果进位就需要加到尾部 
@@ -228,7 +229,7 @@ uint16_t TCPIP_Check_Code(uint32_t sum)
   * @return	bool	
   * @remark	所指的端口是相对与本地连接来说的
   */
-bool TCPIP_Check_Socket(uint8_t Protocol,uint16_t Lport,uint16_t *NetIndex)
+bool MyIP_CheckSocket(uint8_t Protocol,uint16_t Lport,uint16_t *NetIndex)
 {
 	uint16_t NetNum = sizeof(MyNet)/sizeof(MyNet[0]);
 
@@ -251,7 +252,7 @@ bool TCPIP_Check_Socket(uint8_t Protocol,uint16_t Lport,uint16_t *NetIndex)
   * @return	uint8_t	
   * @remark	
   */
-static uint8_t Data_Receive(void)
+static uint8_t MyIP_DataReceive(void)
 {
 	uint8_t data[2048];
 	uint16_t len=MyIP_PacketReceive(data,sizeof(data)/sizeof(data[0]));	 //接收数据
@@ -277,8 +278,12 @@ static uint8_t Data_Receive(void)
 
 void MyIP_Run(void)
 {
-	Data_Receive();
-	My_NetState();
+	MyIP_DataReceive();
+	MyIP_NetState();
+	MyIP_ARPCacheRefresh();
+#if USE_DHCP==1
+	MyIP_IPLeaseTimeProc();					//动态获取IP存活时间设置
+#endif
 }
 
 /**
@@ -288,12 +293,12 @@ void MyIP_Run(void)
   * @return	void
   * @remark	不考虑溢出，必须每隔一秒钟调用一次
   */
-void MyTCPIPTime_Refresh(void)
+void MyIP_TimeRefresh(void)
 {
 	MyTCPIPTime_Sec++;
 }
 
-uint32_t MyTCPIPTime_GetNowTime(void)
+uint32_t MyIP_GetNowTime(void)
 {
 	return MyTCPIPTime_Sec;
 }
@@ -305,7 +310,7 @@ uint32_t MyTCPIPTime_GetNowTime(void)
   * @return	uint32_t
   * @remark
   */
-uint32_t MyTCPIPTime_GetElapsedTime(uint32_t PreTime)
+uint32_t MyIP_GetElapsedTime(uint32_t PreTime)
 {
 	if(MyTCPIPTime_Sec >= PreTime)
 		return (MyTCPIPTime_Sec-PreTime);
@@ -552,15 +557,30 @@ int MyIP_Sendto(uint16_t sockfd,const uint8_t *data,uint16_t len)
 	//判断连接协议类型
 	if( (MyNet[sockfd].Net_Type==TCP_SERVER) || (MyNet[sockfd].Net_Type==TCP_CLIENT) )
 	{
+		//未建立连接
 		if(MyNet[sockfd].Cur_Stat != TCP_ESTABLISHED)
 			return 3;
 		
-		return Send_TCP_Bag(&MyNet[sockfd],(TCPFLG_ACK|TCPFLG_PSH),data,len);
+		//上次发送的数据还没收到应答
+		if(MyNet[sockfd].Net_Flg.reg.Wait_Ack)
+			return 4;
+		
+		uint8_t rt = Send_TCP_Bag(&MyNet[sockfd],(TCPFLG_ACK|TCPFLG_PSH),data,len);
+		if(rt == 0)
+		{
+			MyNet[sockfd].Net_Flg.reg.Wait_Ack = 1;
+			return 0;
+		}
+		else
+		{
+			return (4+rt);
+		}
+
 	}
 	else
 	{
 		if(MyNet[sockfd].Cur_Stat != UDP_TRANSFER)
-			return 4;
+			return 10;
 		
 		UDPSTRUCT tempUdp;
 		memcpy(tempUdp.Re_IP,MyNet[sockfd].Re_IP,4);
@@ -569,9 +589,11 @@ int MyIP_Sendto(uint16_t sockfd,const uint8_t *data,uint16_t len)
 		tempUdp.Re_Port = MyNet[sockfd].Re_Port;
 		
 		//发送UDP数据包
-		Send_UDP_Bag(&MyNet[sockfd],&tempUdp,data,len);
-		
-		return 0;
+		uint8_t rt = Send_UDP_Bag(&MyNet[sockfd],&tempUdp,data,len);
+		if(rt == 0)
+			return 0;
+		else
+			return (rt+10);
 	}
 }
 
@@ -588,11 +610,11 @@ uint16_t MyIP_revcfrom(uint16_t sockfd,const uint8_t *data,uint16_t MaxLen)
 {
 	uint16_t NetNum = sizeof(MyNet)/sizeof(MyNet[0]);
 	if( (sockfd>=NetNum) || (sockfd<1) )
-		return 0;
+		return 1;
 	
 	//连接未初始化
 	if(0 == MyNet[sockfd].Net_Flg.reg.Used)
-		return 0;
+		return 2;
 	
 	//从对应的socket队列中读取数据
 	

@@ -14,8 +14,9 @@
 
 #define NETSTATE_DEBUGOUT(...)	TCPDEBUGOUT(__VA_ARGS__)
 
+#if USE_DHCP==1
 extern bool DHCP_FinishFlg;
-	
+#endif	
 /**
   * @brief	网络状态机处理
   * @param	TimeInterVal: 不调用间隔，单位ms
@@ -24,8 +25,9 @@ extern bool DHCP_FinishFlg;
   * @remark		
   */
 
-void My_NetState(void)
+void MyIP_NetState(void)
 {
+#if USE_DHCP==1
 	if(DHCP_FinishFlg == false)
 	{
 		switch(MyNet[0].Cur_Stat)
@@ -36,7 +38,7 @@ void My_NetState(void)
 				{
 					NETSTATE_DEBUGOUT("STATE CLOSE ENTRY\r\n");		
 					MyNet[0].Pre_Stat = MyNet[0].Cur_Stat;	
-//					MyNet[0].Time_Count = MyTCPIPTime_GetNowTime();		//获取当前时间
+//					MyNet[0].Time_Count = MyIP_GetNowTime();		//获取当前时间
 //					MyNet[0].Re_Sent = 0;							//重发次数清0
 				}
 			}
@@ -48,7 +50,7 @@ void My_NetState(void)
 				{
 					NETSTATE_DEBUGOUT("STATE DHCP DISCOVER ENTRY\r\n");		
 					MyNet[0].Pre_Stat = MyNet[0].Cur_Stat;	
-					MyNet[0].Time_Count = MyTCPIPTime_GetNowTime();			//获取当前时间
+					MyNet[0].Time_Count = MyIP_GetNowTime();			//获取当前时间
 					MyNet[0].Re_Sent = 0;									//重发次数清0
 					
 					//发送DISCOVER
@@ -60,9 +62,9 @@ void My_NetState(void)
 				//等待服务器返回OFFER并进入REQUEST状态
 				//没有回复则间隔1,2,4,8,16秒重发,后转失败,此处为方便实现，改为间隔2,4,6,8,10秒重发 (2*(MyNet[i].Re_Sent+1))
 				//改成间隔3s好了
-				else if(MyTCPIPTime_GetElapsedTime(MyNet[0].Time_Count) >= 3 )
+				else if(MyIP_GetElapsedTime(MyNet[0].Time_Count) >= 3 )
 				{
-					MyNet[0].Time_Count = MyTCPIPTime_GetNowTime();
+					MyNet[0].Time_Count = MyIP_GetNowTime();
 					
 					if(MyNet[0].Re_Sent < 5)
 					{
@@ -89,7 +91,7 @@ void My_NetState(void)
 				{
 					NETSTATE_DEBUGOUT("STATE DHCP OFFER ENTRY\r\n");		
 					MyNet[0].Pre_Stat = MyNet[0].Cur_Stat;	
-//					MyNet[0].Time_Count = MyTCPIPTime_GetNowTime();		//获取当前时间
+//					MyNet[0].Time_Count = MyIP_GetNowTime();		//获取当前时间
 //					MyNet[0].Re_Sent = 0;							//重发次数清0
 				}
 				
@@ -104,16 +106,16 @@ void My_NetState(void)
 				{
 					NETSTATE_DEBUGOUT("STATE DHCP REQUEST ENTRY\r\n");		
 					MyNet[0].Pre_Stat = MyNet[0].Cur_Stat;	
-					MyNet[0].Time_Count = MyTCPIPTime_GetNowTime();		//获取当前时间
+					MyNet[0].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[0].Re_Sent = 0;								//重发次数清0
 					
 					//广播发送REQUEST
 					DHCP_Send_Request(0);
 				}
 				//等待服务器返回ACK
-				else if(MyTCPIPTime_GetElapsedTime(MyNet[0].Time_Count) >= 2)
+				else if(MyIP_GetElapsedTime(MyNet[0].Time_Count) >= 2)
 				{
-					MyNet[0].Time_Count = MyTCPIPTime_GetNowTime();
+					MyNet[0].Time_Count = MyIP_GetNowTime();
 					
 					if(MyNet[0].Re_Sent < 5)
 					{
@@ -137,7 +139,7 @@ void My_NetState(void)
 				{
 					NETSTATE_DEBUGOUT("STATE DHCP ASK ENTRY\r\n");		
 					MyNet[0].Pre_Stat = MyNet[0].Cur_Stat;	
-//					MyNet[0].Time_Count = MyTCPIPTime_GetNowTime();		//获取当前时间
+//					MyNet[0].Time_Count = MyIP_GetNowTime();		//获取当前时间
 //					MyNet[0].Re_Sent = 0;							//重发次数清0
 				}
 				
@@ -154,7 +156,7 @@ void My_NetState(void)
 				{
 					NETSTATE_DEBUGOUT("STATE DHCP NASK ENTRY\r\n");		
 					MyNet[0].Pre_Stat = MyNet[0].Cur_Stat;	
-//					MyNet[0].Time_Count = MyTCPIPTime_GetNowTime();		//获取当前时间
+//					MyNet[0].Time_Count = MyIP_GetNowTime();		//获取当前时间
 //					MyNet[0].Re_Sent = 0;							//重发次数清0
 				}
 				
@@ -166,7 +168,7 @@ void My_NetState(void)
 		
 		return;
 	}
-	
+#endif	
 	uint16_t NetNum = sizeof(MyNet)/sizeof(MyNet[0]);
 	for(uint16_t i=1;i<NetNum;i++)
 	{
@@ -189,16 +191,16 @@ void My_NetState(void)
 				{
 					NETSTATE_DEBUGOUT("Socket(%d) STATE ARP REQUEST ENTRY\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;
-					MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();			//获取当前时间
+					MyNet[i].Time_Count = MyIP_GetNowTime();			//获取当前时间
 					MyNet[i].Re_Sent = 0;									//重发次数清0	
 					MyNet[i].Net_Flg.reg.ARPOK = 0;
 					ARP_Request(MyNet[i].Re_IP);					
 				}
 				if(MyNet[i].Net_Flg.reg.ARPOK != 1)
 				{
-					if(MyTCPIPTime_GetElapsedTime(MyNet[i].Time_Count) >= 2)
+					if(MyIP_GetElapsedTime(MyNet[i].Time_Count) >= 2)
 					{
-						MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();
+						MyNet[i].Time_Count = MyIP_GetNowTime();
 						
 						MyNet[i].Re_Sent++;
 						//超过两秒依然没有获得ARP应答
@@ -227,7 +229,7 @@ void My_NetState(void)
 				{
 					NETSTATE_DEBUGOUT("Socket(%d) STATE ARP ANSWER ENTRY\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;
-//					MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();			//获取当前时间
+//					MyNet[i].Time_Count = MyIP_GetNowTime();			//获取当前时间
 //					MyNet[i].Re_Sent = 0;									//重发次数清0						
 				}
 				
@@ -286,7 +288,7 @@ void My_NetState(void)
 				{
 					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP LISTEN ENTRY\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;
-//					MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();		//获取当前时间
+//					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 //					MyNet[i].Re_Sent = 0;							//重发次数清0				
 				}
 			}
@@ -298,12 +300,12 @@ void My_NetState(void)
 				{
 					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP SYNRECEIVED ENTRY\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
-					MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();		//获取当前时间
+					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[i].Re_Sent = 0;								//重发次数清0
 				}
-				if(MyTCPIPTime_GetElapsedTime(MyNet[i].Time_Count) >= 2)	//计时超过两秒
+				if(MyIP_GetElapsedTime(MyNet[i].Time_Count) >= 2)	//计时超过两秒
 				{
-					MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();
+					MyNet[i].Time_Count = MyIP_GetNowTime();
 					
 					//该状态下，服务器发送了SYN|ACK
 					//并等待收到ASK并进入ESTABLISHED
@@ -331,7 +333,7 @@ void My_NetState(void)
 				{
 					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP SYNSENT ENTRY\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
-					MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();		//获取当前时间
+					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[i].Re_Sent = 0;								//重发次数清0
 					
 					//先从ARP缓存表中读取MAC，读取成功则发送SYN，读取失败则先进入ARP
@@ -347,9 +349,9 @@ void My_NetState(void)
 					}
 				}
 				//客户端发出SYN后需等待服务器返回SYN|ACK
-				if(MyTCPIPTime_GetElapsedTime(MyNet[i].Time_Count) >= 2)
+				if(MyIP_GetElapsedTime(MyNet[i].Time_Count) >= 2)
 				{
-					MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();
+					MyNet[i].Time_Count = MyIP_GetNowTime();
 					
 					//等待收到SYN|ACK并进入ESTABLISHED
 					if(MyNet[i].Net_Type == TCP_CLIENT)
@@ -377,7 +379,7 @@ void My_NetState(void)
 				{
 					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP ESTABLISHED ENTRY\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
-					MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();		//获取当前时间
+					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[i].Re_Sent = 0;								//重发次数清0
 					MyNet[i].TCP_WaitTime = TCP_KEEPALIVE_TIME;						//tcp_keepalive_time（开启keepalive的闲置时长）
 				}
@@ -387,7 +389,7 @@ void My_NetState(void)
 					if(MyNet[i].Net_Flg.reg.Data_Sent)						//连接有发送数据后
 					{
 						MyNet[i].Net_Flg.reg.Data_Sent = 0;
-						MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();	
+						MyNet[i].Time_Count = MyIP_GetNowTime();	
 						MyNet[i].Re_Sent = 0;								//重发次数清0
 						MyNet[i].TCP_WaitTime = TCP_KEEPALIVE_TIME;						//tcp_keepalive_time（开启keepalive的闲置时长）
 						break;
@@ -395,17 +397,17 @@ void My_NetState(void)
 					else if(MyNet[i].Net_Flg.reg.Data_Recv)	
 					{
 						MyNet[i].Net_Flg.reg.Data_Recv = 0;
-						MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();
+						MyNet[i].Time_Count = MyIP_GetNowTime();
 						MyNet[i].Re_Sent = 0;								//重发次数清0
 						MyNet[i].TCP_WaitTime = TCP_KEEPALIVE_TIME;						//tcp_keepalive_time（开启keepalive的闲置时长）
 						break;
 					}
 
 					//超过设定时间没有数据收发，开始心跳探测
-					if(MyTCPIPTime_GetElapsedTime(MyNet[i].Time_Count) >= MyNet[i].TCP_WaitTime)
+					if(MyIP_GetElapsedTime(MyNet[i].Time_Count) >= MyNet[i].TCP_WaitTime)
 					{
 						MyNet[i].TCP_WaitTime = TCP_KEEPALIVE_INTVL;										//tcp_keepalive_intvl（keepalive探测包的发送间隔）
-						MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();
+						MyNet[i].Time_Count = MyIP_GetNowTime();
 						if(MyNet[i].Re_Sent < TCP_KEEPALIVE_PROBES)							//tcp_keepalive_probes（如果对方不予应答，探测包的发送次数）
 						{
 							//超时后重发keepalive
@@ -432,13 +434,13 @@ void My_NetState(void)
 				{
 					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP FINWAIT1 ENTRY\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
-					MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();		//获取当前时间
+					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[i].Re_Sent = 0;							//重发次数清0
 				}
 				//客户端发出FIN|ACK后需等待服务器返回ACK
-				if(MyTCPIPTime_GetElapsedTime(MyNet[i].Time_Count) >= 2)
+				if(MyIP_GetElapsedTime(MyNet[i].Time_Count) >= 2)
 				{
-					MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();
+					MyNet[i].Time_Count = MyIP_GetNowTime();
 					//等待收到ACK或者FIN|ACK并进入FINWAIT1或ESTABLISHED
 					if(MyNet[i].Net_Type == TCP_CLIENT)
 					{
@@ -467,14 +469,14 @@ void My_NetState(void)
 				{
 					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP FINWAIT2 ENTRY\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
-					MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();		//获取当前时间
+					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[i].Re_Sent = 0;							//重发次数清0
 				}
 				//客户端进入FINWAIT2状态后要等待服务器发回的FIN|ACK
 				//此时服务器已经返回了ACK
-				if(MyTCPIPTime_GetElapsedTime(MyNet[i].Time_Count) >= 2)
+				if(MyIP_GetElapsedTime(MyNet[i].Time_Count) >= 2)
 				{
-					MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();
+					MyNet[i].Time_Count = MyIP_GetNowTime();
 					if(MyNet[i].Net_Type == TCP_CLIENT)
 					{
 						//直接关闭客户端回到CLOSED状态
@@ -491,13 +493,13 @@ void My_NetState(void)
 				{
 					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP CLOSING ENTRY\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
-					MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();		//获取当前时间
+					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[i].Re_Sent = 0;							//重发次数清0
 				}
 				//客户端进入CLOSING状态后需等待服务器返回的ACK然后关闭客户端连接
-				if(MyTCPIPTime_GetElapsedTime(MyNet[i].Time_Count) >= 2)
+				if(MyIP_GetElapsedTime(MyNet[i].Time_Count) >= 2)
 				{
-					MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();
+					MyNet[i].Time_Count = MyIP_GetNowTime();
 					if(MyNet[i].Net_Type == TCP_CLIENT)
 					{
 						if(MyNet[i].Re_Sent < 3)
@@ -523,12 +525,12 @@ void My_NetState(void)
 				{
 					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP TIMEWAIT ENTRY\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
-					MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();		//获取当前时间
+					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[i].Re_Sent = 0;							//重发次数清0
 				}
 				//客户端进入TIMEWAIT状态后等待10s，然后进入关闭状态
 				//因为在TIMEWAIT状态下仍然可能收到对方的FIN需要进行应答（对方没有收到我的ACK，又发送了一遍FIN|ACK）
-				if(MyTCPIPTime_GetElapsedTime(MyNet[i].Time_Count) >= 10)
+				if(MyIP_GetElapsedTime(MyNet[i].Time_Count) >= 10)
 				{
 //					MyNet[i].Cur_Stat = TCP_CLOSED;
 					MyNet[i].Cur_Stat = CLOSE;
@@ -542,13 +544,13 @@ void My_NetState(void)
 				{
 					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP CLOSEWAIT ENTRY\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
-					MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();		//获取当前时间
+					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[i].Re_Sent = 0;							//重发次数清0
 				}
 				//如果自己是服务器，并且主动断开连接的话，在此状态下要等对方返回ACK 和 FIN|ACK，然后进入CLOSE
 				if(MyNet[i].Net_Type == TCP_SERVER)
 				{
-					if(MyTCPIPTime_GetElapsedTime(MyNet[i].Time_Count) >= 3)	//计时超过两秒
+					if(MyIP_GetElapsedTime(MyNet[i].Time_Count) >= 3)	//计时超过两秒
 					{
 						MyNet[i].Cur_Stat = CLOSE;
 					}
@@ -562,14 +564,14 @@ void My_NetState(void)
 				{
 					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP LASTASK ENTRY\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
-					MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();		//获取当前时间
+					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[i].Re_Sent = 0;							//重发次数清0
 				}
 				//该状态下，服务器发送了FIN|ACK
 				//并等待收到ASK并进入CLOSED
-				if(MyTCPIPTime_GetElapsedTime(MyNet[i].Time_Count) >= 2)	//计时超过两秒
+				if(MyIP_GetElapsedTime(MyNet[i].Time_Count) >= 2)	//计时超过两秒
 				{
-					MyNet[i].Time_Count = MyTCPIPTime_GetNowTime();
+					MyNet[i].Time_Count = MyIP_GetNowTime();
 					
 					if(MyNet[i].Net_Type == TCP_SERVER)
 					{

@@ -59,8 +59,8 @@ bool IP_Head_Pack(LINKSTRUCT *node,const uint8_t *Re_IP,uint8_t IP_Type,uint16_t
 
 
 	//计算IP首部检验和
-	uint32_t sum = TCPIP_Check_Sum((uint16_t *)(node->IP_Head),20);//IP头20;
-	uint16_t tem = TCPIP_Check_Code(sum);//计算溢出位
+	uint32_t sum = MyIP_CheckSum((uint16_t *)(node->IP_Head),20);//IP头20;
+	uint16_t tem = MyIP_CheckCode(sum);//计算溢出位
 
 //	node->IP_Head[10]=tem>>8;
 //	node->IP_Head[11]=tem;
@@ -112,8 +112,8 @@ bool IP_Head_Pack_Ping(LINKSTRUCT *node,uint16_t IP_len,const uint8_t *data)
 
 
 	//计算IP首部检验和
-	uint32_t sum = TCPIP_Check_Sum((uint16_t *)(node->IP_Head),20);//IP头20;
-	uint16_t tem = TCPIP_Check_Code(sum);//计算溢出位
+	uint32_t sum = MyIP_CheckSum((uint16_t *)(node->IP_Head),20);//IP头20;
+	uint16_t tem = MyIP_CheckCode(sum);//计算溢出位
 
 	//注意字节调换
 	node->IP_Head[10]=tem;
@@ -161,8 +161,8 @@ uint8_t IP_Data_Process(const uint8_t *data,uint16_t len)
 	memcpy(temp_IP_Head,data+14,20);
 	temp_IP_Head[10] = 0;
 	temp_IP_Head[11] = 0;
-	uint32_t sum = TCPIP_Check_Sum((uint16_t *)temp_IP_Head,20);		//IP头20;
-	uint16_t tem = TCPIP_Check_Code(sum);								//计算溢出位
+	uint32_t sum = MyIP_CheckSum((uint16_t *)temp_IP_Head,20);		//IP头20;
+	uint16_t tem = MyIP_CheckCode(sum);								//计算溢出位
 	if((data[24] != (uint8_t)tem) || data[25] != (uint8_t)(tem>>8))
 	{
 		IP_DEBUGOUT("IP check sum error\r\n");

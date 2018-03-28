@@ -10,6 +10,7 @@
 #include "MyIP_TCP.h"
 #include "MyIP_Enthernet.h"
 #include "MyIP_IP.h"
+#include "MyIP_ARP.h"
 
 #define TCP_DEBUGOUT(...)	TCPDEBUGOUT(__VA_ARGS__)
 
@@ -68,10 +69,10 @@ static bool TCP_Data_Check(const uint8_t *data,uint16_t len,
 	datalen -= TCP_Head_Len;							//减去TCP帧头的长度
 	
 	//计算校验和
-	uint32_t sum = TCPIP_Check_Sum((uint16_t *)(TCP_False),12);		//TCP伪首部12
-	sum += TCPIP_Check_Sum((uint16_t *)(TCP_Head),TCP_Head_Len);	//TCP首部 TCP_Head_Len
-	sum += TCPIP_Check_Sum((uint16_t *)(data+34+TCP_Head_Len),datalen);			//数据部分，偏移指针14+20+TCP_Head_Len
-	uint16_t tem = TCPIP_Check_Code(sum);
+	uint32_t sum = MyIP_CheckSum((uint16_t *)(TCP_False),12);		//TCP伪首部12
+	sum += MyIP_CheckSum((uint16_t *)(TCP_Head),TCP_Head_Len);	//TCP首部 TCP_Head_Len
+	sum += MyIP_CheckSum((uint16_t *)(data+34+TCP_Head_Len),datalen);			//数据部分，偏移指针14+20+TCP_Head_Len
+	uint16_t tem = MyIP_CheckCode(sum);
 	
 	if(tem == GetSum)
 	{
@@ -173,10 +174,10 @@ static bool TCP_Head_Pack(LINKSTRUCT *node,uint8_t TCP_Flag,uint16_t Buf_Len,con
 	}
 
 	//计算检验和
-	uint32_t sum = TCPIP_Check_Sum((uint16_t *)(TCP_False),12);		//TCP伪首部12
-	sum += TCPIP_Check_Sum((uint16_t *)(node->TCP_Head),(((node->TCP_Head[12])>>2)&0x3C) );				//TCP首部长
-	sum += TCPIP_Check_Sum((uint16_t *)data,len);							//TCP首部20
-	uint16_t tem = TCPIP_Check_Code(sum);									//计算溢出位
+	uint32_t sum = MyIP_CheckSum((uint16_t *)(TCP_False),12);		//TCP伪首部12
+	sum += MyIP_CheckSum((uint16_t *)(node->TCP_Head),(((node->TCP_Head[12])>>2)&0x3C) );				//TCP首部长
+	sum += MyIP_CheckSum((uint16_t *)data,len);							//TCP首部20
+	uint16_t tem = MyIP_CheckCode(sum);									//计算溢出位
 
     node->TCP_Head[16] = tem;
 	node->TCP_Head[17] = tem>>8;					//检验和稍后补充
@@ -280,7 +281,7 @@ uint8_t TCP_Data_Process(const uint8_t *data,uint16_t len)
 	uint16_t LinkIndex;
 
 	//检查是哪个连接的数据包
-	if(!TCPIP_Check_Socket((TCP_CLIENT|TCP_SERVER),L_Port,&LinkIndex))
+	if(!MyIP_CheckSocket((TCP_CLIENT|TCP_SERVER),L_Port,&LinkIndex))
 	{
 //		TCP_DEBUGOUT("local port not found\r\n");
 		return 2;
@@ -299,6 +300,8 @@ uint8_t TCP_Data_Process(const uint8_t *data,uint16_t len)
 				MyNet[LinkIndex].Re_Port = R_Port;
 				MyNetConfig_ReMAC(&MyNet[LinkIndex],data+6);			//复制远程MAC
 				MyNetConfig_ReIP(&MyNet[LinkIndex],data+26);			//复制远程IP
+				//记录到ARP缓存中
+				ARPCache_Write(data+26,data+6);
 				
 				//发送SYN|ASK
 				Send_TCP_Bag(&MyNet[LinkIndex],(TCPFLG_ACK|TCPFLG_SYN),NULL,0);
@@ -323,6 +326,9 @@ uint8_t TCP_Data_Process(const uint8_t *data,uint16_t len)
 				MyNet[LinkIndex].Cur_Stat = TCP_ESTABLISHED;
 				
 				//记录客户端IP和MAC到ARP缓存表中
+				
+				//建立了连接，进入数据传输状态，允许数据发送
+				MyNet[LinkIndex].Net_Flg.reg.Wait_Ack = 0;
 			}
 			else if(MyNet[LinkIndex].Cur_Stat == TCP_ESTABLISHED)
 			{
@@ -342,6 +348,8 @@ uint8_t TCP_Data_Process(const uint8_t *data,uint16_t len)
 				{
 					MyNet[LinkIndex].TCP_CMark = TCP_Mark;
 				}
+				//数据传送状态，收到对方应答，允许数据发送
+				MyNet[LinkIndex].Net_Flg.reg.Wait_Ack = 0;
 			}
 //			else if(MyNet[LinkIndex].Cur_Stat == TCP_CLOSEWAIT)
 //			{
@@ -375,6 +383,9 @@ uint8_t TCP_Data_Process(const uint8_t *data,uint16_t len)
 				{
 					MyNet[LinkIndex].TCP_CMark = TCP_Mark;
 				}
+				
+				//数据传输状态，收到对方的ACK，允许数据发送
+				MyNet[LinkIndex].Net_Flg.reg.Wait_Ack = 0;
 			}
 			else if(MyNet[LinkIndex].Cur_Stat==TCP_CLOSING)
 			{
@@ -387,7 +398,7 @@ uint8_t TCP_Data_Process(const uint8_t *data,uint16_t len)
 			{
 				//客户端发送SYN后收到了服务器的ACK
 				//此时需要改变本地端口
-//				MyNet[LinkIndex].Lc_Port = GetLocalPort();
+//				MyNet[LinkIndex].Lc_Port = MyIP_GetLocalPort();
 			}
 		}
 		return 0;
@@ -516,6 +527,8 @@ uint8_t TCP_Data_Process(const uint8_t *data,uint16_t len)
 				MyNet[LinkIndex].TCP_Mark = TCP_CMark;		//序号
 				MyNet[LinkIndex].TCP_CMark = TCP_Mark+1;
 				MyNet[LinkIndex].Cur_Stat = TCP_ESTABLISHED;
+				//建立了连接，进入数据传输状态，允许数据发送
+				MyNet[LinkIndex].Net_Flg.reg.Wait_Ack = 0;
 				
 				//回复包
 				Send_TCP_Bag(&MyNet[LinkIndex],TCPFLG_ACK,NULL,0);
@@ -528,29 +541,35 @@ uint8_t TCP_Data_Process(const uint8_t *data,uint16_t len)
 		//当前正在数据传送状态
 		if(MyNet[LinkIndex].Cur_Stat == TCP_ESTABLISHED)
 		{
+			MyNet[LinkIndex].Net_Flg.reg.Data_Recv = 1;
 			//将数据保存到队列中等待做处理
 			//数据起始地址 data+DataStartIndex;
 			//数据长度 DataLen
 			//确认序号等于对方的序号加上我实际接收的长度
-#if 0
-			if(TCP_Data_Recev(LinkIndex,data+DataStartIndex,DataLen))
-			{
-				MyNet[LinkIndex].TCP_Mark = TCP_CMark;		//序号
-				MyNet[LinkIndex].TCP_CMark = TCP_Mark+DataLen;
-			}
-			else
-			{
-				MyNet[LinkIndex].TCP_Mark = TCP_CMark;		//序号
-				MyNet[LinkIndex].TCP_CMark = TCP_Mark;
-			}
-#else
+//#if 0
+//			if(TCP_Data_Recev(LinkIndex,data+DataStartIndex,DataLen))
+//			{
+//				MyNet[LinkIndex].TCP_Mark = TCP_CMark;		//序号
+//				MyNet[LinkIndex].TCP_CMark = TCP_Mark+DataLen;
+//			}
+//			else
+//			{
+//				MyNet[LinkIndex].TCP_Mark = TCP_CMark;		//序号
+//				MyNet[LinkIndex].TCP_CMark = TCP_Mark;
+//			}
+//#else
+//			MyNet[LinkIndex].TCP_Mark = TCP_CMark;		//序号
+//			MyNet[LinkIndex].TCP_CMark = TCP_Mark+TCP_Data_Recev(LinkIndex,data+DataStartIndex,DataLen);
+//#endif
+	
 			MyNet[LinkIndex].TCP_Mark = TCP_CMark;		//序号
-			MyNet[LinkIndex].TCP_CMark = TCP_Mark+TCP_Data_Recev(LinkIndex,data+DataStartIndex,DataLen);
-#endif			
-			MyNet[LinkIndex].Net_Flg.reg.Data_Recv = 1;
-			
+			//如果对方没收到ACK，则又会重新传一遍数据，需要根据MARK判断是不是重传的数据
+			if(MyNet[LinkIndex].TCP_CMark != (TCP_Mark+DataLen) )
+			{
+				MyNet[LinkIndex].TCP_CMark = TCP_Mark+TCP_Data_Recev(LinkIndex,data+DataStartIndex,DataLen);
+			}
 			//回复包
-			Send_TCP_Bag(&MyNet[LinkIndex],TCPFLG_ACK,NULL,0);		
+			Send_TCP_Bag(&MyNet[LinkIndex],TCPFLG_ACK,NULL,0);
 		}
 	}
 	return 0;
