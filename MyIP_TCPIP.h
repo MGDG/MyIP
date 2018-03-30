@@ -120,34 +120,14 @@ typedef struct
 
 struct SocketAddr
 {
-	uint8_t ReIP[4];
-	uint16_t RePort;
+	const char *IP;
+	uint16_t Port;
 };
 
 extern LINKSTRUCT MyNet[3];
 
 void MyIP_Init(void);
 uint16_t MyIP_GetLocalPort(void);
-
-/**
-  * @brief	刷新连接的远程IP
-  * @param	node： 连接指针
-  * @param	ipbuf: IP数组
-
-  * @return	bool	
-  * @remark		
-  */
-bool MyNetConfig_ReIP(LINKSTRUCT *node,const uint8_t *ipbuf);
-
-/**
-  * @brief	刷新连接的远程MAC
-  * @param	node： 连接指针
-  * @param	macbuf: MAC数组
-
-  * @return	bool	
-  * @remark		
-  */
-bool MyNetConfig_ReMAC(LINKSTRUCT *node,const uint8_t *macbuf);
 
 uint32_t MyIP_CheckSum(const uint16_t *p,uint16_t len);
 uint16_t MyIP_CheckCode(uint32_t sum);

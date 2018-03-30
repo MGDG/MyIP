@@ -192,7 +192,7 @@ static bool TCP_Head_Pack(LINKSTRUCT *node,uint8_t TCP_Flag,uint16_t Buf_Len,con
   * @param	len: 数据长度
 
   * @return	uint8_t	
-  * @remark
+  * @remark 正确做法是还要判断对方窗口大小决定是否需要分片
   */
 uint8_t Send_TCP_Bag(LINKSTRUCT *node,uint8_t TCP_Flag,const uint8_t *data,uint16_t len)
 {
@@ -298,8 +298,10 @@ uint8_t TCP_Data_Process(const uint8_t *data,uint16_t len)
 				MyNet[LinkIndex].TCP_Mark = 0x1200;		//序号
 				MyNet[LinkIndex].TCP_CMark = TCP_Mark+1;
 				MyNet[LinkIndex].Re_Port = R_Port;
-				MyNetConfig_ReMAC(&MyNet[LinkIndex],data+6);			//复制远程MAC
-				MyNetConfig_ReIP(&MyNet[LinkIndex],data+26);			//复制远程IP
+//				MyNetConfig_ReMAC(&MyNet[LinkIndex],data+6);			//复制远程MAC
+				memcpy(MyNet[LinkIndex].Re_MAC,data+6,6);				//复制远程MAC
+//				MyNetConfig_ReIP(&MyNet[LinkIndex],data+26);			//复制远程IP
+				memcpy(MyNet[LinkIndex].Re_IP,data+26,4);
 				//记录到ARP缓存中
 				ARPCache_Write(data+26,data+6);
 				

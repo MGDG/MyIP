@@ -36,7 +36,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[0].Cur_Stat != MyNet[0].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("STATE CLOSE ENTRY\r\n");		
+					NETSTATE_DEBUGOUT("STATE CLOSE\r\n");		
 					MyNet[0].Pre_Stat = MyNet[0].Cur_Stat;	
 //					MyNet[0].Time_Count = MyIP_GetNowTime();		//获取当前时间
 //					MyNet[0].Re_Sent = 0;							//重发次数清0
@@ -48,7 +48,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[0].Cur_Stat != MyNet[0].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("STATE DHCP DISCOVER ENTRY\r\n");		
+					NETSTATE_DEBUGOUT("STATE DHCP DISCOVER\r\n");		
 					MyNet[0].Pre_Stat = MyNet[0].Cur_Stat;	
 					MyNet[0].Time_Count = MyIP_GetNowTime();			//获取当前时间
 					MyNet[0].Re_Sent = 0;									//重发次数清0
@@ -89,7 +89,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[0].Cur_Stat != MyNet[0].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("STATE DHCP OFFER ENTRY\r\n");		
+					NETSTATE_DEBUGOUT("STATE DHCP OFFER\r\n");		
 					MyNet[0].Pre_Stat = MyNet[0].Cur_Stat;	
 //					MyNet[0].Time_Count = MyIP_GetNowTime();		//获取当前时间
 //					MyNet[0].Re_Sent = 0;							//重发次数清0
@@ -104,7 +104,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[0].Cur_Stat != MyNet[0].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("STATE DHCP REQUEST ENTRY\r\n");		
+					NETSTATE_DEBUGOUT("STATE DHCP REQUEST\r\n");		
 					MyNet[0].Pre_Stat = MyNet[0].Cur_Stat;	
 					MyNet[0].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[0].Re_Sent = 0;								//重发次数清0
@@ -137,7 +137,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[0].Cur_Stat != MyNet[0].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("STATE DHCP ASK ENTRY\r\n");		
+					NETSTATE_DEBUGOUT("STATE DHCP ASK\r\n");		
 					MyNet[0].Pre_Stat = MyNet[0].Cur_Stat;	
 //					MyNet[0].Time_Count = MyIP_GetNowTime();		//获取当前时间
 //					MyNet[0].Re_Sent = 0;							//重发次数清0
@@ -154,7 +154,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[0].Cur_Stat != MyNet[0].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("STATE DHCP NASK ENTRY\r\n");		
+					NETSTATE_DEBUGOUT("STATE DHCP NASK\r\n");		
 					MyNet[0].Pre_Stat = MyNet[0].Cur_Stat;	
 //					MyNet[0].Time_Count = MyIP_GetNowTime();		//获取当前时间
 //					MyNet[0].Re_Sent = 0;							//重发次数清0
@@ -179,7 +179,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[i].Cur_Stat != MyNet[i].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("Socket(%d) STATE CLOSE ENTRY\r\n",i);		
+					NETSTATE_DEBUGOUT("Socket(%d) STATE CLOSE\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
 				}
 			}
@@ -189,7 +189,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[i].Cur_Stat != MyNet[i].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("Socket(%d) STATE ARP REQUEST ENTRY\r\n",i);		
+					NETSTATE_DEBUGOUT("Socket(%d) STATE ARP REQUEST\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;
 					MyNet[i].Time_Count = MyIP_GetNowTime();			//获取当前时间
 					MyNet[i].Re_Sent = 0;									//重发次数清0	
@@ -227,7 +227,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[i].Cur_Stat != MyNet[i].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("Socket(%d) STATE ARP ANSWER ENTRY\r\n",i);		
+					NETSTATE_DEBUGOUT("Socket(%d) STATE ARP ANSWER\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;
 //					MyNet[i].Time_Count = MyIP_GetNowTime();			//获取当前时间
 //					MyNet[i].Re_Sent = 0;									//重发次数清0						
@@ -255,7 +255,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[i].Cur_Stat != MyNet[i].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("Socket(%d) STATE UDP CONNECT ENTRY\r\n",i);		
+					NETSTATE_DEBUGOUT("Socket(%d) STATE UDP CONNECT\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
 					
 					//先从ARP缓存表中读取MAC，读取成功则进入TRABSFER状态，读取失败则先进入ARP
@@ -276,7 +276,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[i].Cur_Stat != MyNet[i].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("Socket(%d) STATE UDP TRANSFER ENTRY\r\n",i);		
+					NETSTATE_DEBUGOUT("Socket(%d) STATE UDP TRANSFER\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
 				}
 			}
@@ -286,7 +286,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[i].Cur_Stat != MyNet[i].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP LISTEN ENTRY\r\n",i);		
+					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP LISTEN\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;
 //					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 //					MyNet[i].Re_Sent = 0;							//重发次数清0				
@@ -298,7 +298,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[i].Cur_Stat != MyNet[i].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP SYNRECEIVED ENTRY\r\n",i);		
+					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP SYNRECEIVED\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
 					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[i].Re_Sent = 0;								//重发次数清0
@@ -331,7 +331,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[i].Cur_Stat != MyNet[i].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP SYNSENT ENTRY\r\n",i);		
+					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP SYNSENT\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
 					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[i].Re_Sent = 0;								//重发次数清0
@@ -377,7 +377,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[i].Cur_Stat != MyNet[i].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP ESTABLISHED ENTRY\r\n",i);		
+					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP ESTABLISHED\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
 					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[i].Re_Sent = 0;								//重发次数清0
@@ -432,7 +432,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[i].Cur_Stat != MyNet[i].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP FINWAIT1 ENTRY\r\n",i);		
+					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP FINWAIT1\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
 					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[i].Re_Sent = 0;							//重发次数清0
@@ -467,7 +467,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[i].Cur_Stat != MyNet[i].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP FINWAIT2 ENTRY\r\n",i);		
+					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP FINWAIT2\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
 					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[i].Re_Sent = 0;							//重发次数清0
@@ -491,7 +491,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[i].Cur_Stat != MyNet[i].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP CLOSING ENTRY\r\n",i);		
+					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP CLOSING\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
 					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[i].Re_Sent = 0;							//重发次数清0
@@ -523,7 +523,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[i].Cur_Stat != MyNet[i].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP TIMEWAIT ENTRY\r\n",i);		
+					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP TIMEWAIT\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
 					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[i].Re_Sent = 0;							//重发次数清0
@@ -542,7 +542,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[i].Cur_Stat != MyNet[i].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP CLOSEWAIT ENTRY\r\n",i);		
+					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP CLOSEWAIT\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
 					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[i].Re_Sent = 0;							//重发次数清0
@@ -562,7 +562,7 @@ void MyIP_NetState(void)
 			{
 				if(MyNet[i].Cur_Stat != MyNet[i].Pre_Stat)
 				{
-					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP LASTASK ENTRY\r\n",i);		
+					NETSTATE_DEBUGOUT("Socket(%d) STATE TCP LASTASK\r\n",i);		
 					MyNet[i].Pre_Stat = MyNet[i].Cur_Stat;	
 					MyNet[i].Time_Count = MyIP_GetNowTime();		//获取当前时间
 					MyNet[i].Re_Sent = 0;							//重发次数清0

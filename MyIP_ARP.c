@@ -527,66 +527,18 @@ uint8_t ARP_Data_Process(const uint8_t *data,uint16_t len)
 			if(memcmp(MyNet[i].Re_IP,data+28,4) == 0)
 			{
 				//IP地址符合
-				MyNetConfig_ReMAC(&MyNet[i],data+22);
+//				MyNetConfig_ReMAC(&MyNet[i],data+22);
+				memcpy(MyNet[i].Re_MAC,data+22,6);
 				MyNet[i].Net_Flg.reg.ARPOK = 1;
 			}
 			else if( (!Is_LAN(MyNet[i].Re_IP)) && (memcmp(data+28,MyIP_GateWay,4) == 0) )
 			{
 				//arp到的是网关IP，并且连接的远程ip是外网ip
-				MyNetConfig_ReMAC(&MyNet[i],data+22);
+//				MyNetConfig_ReMAC(&MyNet[i],data+22);
+				memcpy(MyNet[i].Re_MAC,data+22,6);
 				MyNet[i].Net_Flg.reg.ARPOK = 1;
 			}
 		}
-#if 0		
-		//查询当前谁在ARP，并且IP符合
-		//data+14： 发送方的IP地址
-		if(memcmp(data+14+14,MyIP_GateWay,4) == 0)	//如果为网关IP
-		{
-			uint16_t NetNum = sizeof(MyNet)/sizeof(MyNet[0]);
-			for(uint16_t i=0;i<NetNum;i++)
-			{
-//				if(MyNet[i].Net_Type & CLIENT)		//如果为客户端
-//				{
-//					if(!Is_LAN(&MyNet[i]))			//如果是外网
-					if(!Is_LAN(MyNet[i].Re_IP))			//如果是外网
-					{
-						//实际测试路由器会返回两次，说明局域网内有网卡在冒充网关，该网卡MAC 48-7D-2E-04-28-36
-						//第二次返回才是对的MAC
-						//所以此处不判断当前状态了
-//						if(MyNet[i].Cur_Stat == ARP_REQUEST)	//且正在ARP，则改为ARP_ANSWER，多个连接是外网时，只需要一次ARP
-//						{
-							//复制远程MAC到连接0
-							MyNetConfig_ReMAC(&MyNet[i],data+14+8);
-//							MyNet[i].Cur_Stat = ARP_ANSWER;		//ARP结束
-//							MyNet[i].Net_Flg.reg.ARPOK = 1;		//ARP成功
-							MyNet[i].Net_Flg.ARPOK = 1;		//ARP成功
-							ARP_DEBUGOUT("Get ARP MAC(%d): %02X-%02X-%02X-%02X-%02X-%02X\r\n",i,data[22],data[23],data[24],data[25],data[26],data[27]);
-							break;
-//						}
-					}
-//				}
-			}
-		}
-		else
-		{
-			//收到对方的ARP应答后要确定是哪个连接在查询对方ARP，再将对方MAC存如哪个连接
-			//检查所有连接，将对方MAC存入IP地址相同的连接当中
-			uint16_t NetIndex;
-			
-			if(!WhoIsInTheARP(&NetIndex,(data+28)))
-				return 3;										//没人在发ARP查询报文
-
-			//如果是正在进行ARP，则结束当前连接的ARP
-//			if(MyNet[NetIndex].Cur_Stat == ARP_REQUEST)
-//			{
-				MyNet[NetIndex].Net_Flg.ARPOK = 1;		//ARP成功
-//				MyNet[NetIndex].Cur_Stat = ARP_ANSWER;
-				MyNetConfig_ReMAC(&MyNet[NetIndex],data+14+8);
-				
-				ARP_DEBUGOUT("get mac\r\n");
-//			}
-		}
-#endif
 	}
 	//RARP请求
 	else if(ARP_Type == 3)

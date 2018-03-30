@@ -33,7 +33,7 @@ uint8_t MyIP_GateWay[4]={192,168,1,1}; //默认网关
 
 
 LINKSTRUCT MyNet[3];
-uint16_t sockfd,sockfd2;
+uint16_t sockfd1,sockfd2;
 	
 void MyIP_Init(void)
 {
@@ -44,44 +44,27 @@ void MyIP_Init(void)
 	MyNet[0].Cur_Stat = DHCP_DISCOVER;
 		
 	
-	struct SocketAddr socketaddr;
-	uint8_t tempip[4] = {14,215,177,38};
-	memcpy(socketaddr.ReIP,tempip,4);
-	socketaddr.RePort = 80;
-//	uint8_t tempip[4] = {192,168,1,80};
-//	memcpy(socketaddr.ReIP,tempip,4);
-//	socketaddr.RePort = 8235;
-	sockfd = MyIP_Socket(TCP_CLIENT);
-	if(sockfd != 0)
+	struct SocketAddr Socket1;
+	Socket1.IP = "14.215.177.38";							//对方IP
+	Socket1.Port = 80;										//对方端口
+	sockfd1 = MyIP_Socket(TCP_CLIENT);						//创建一个TCP客户端
+	if(sockfd1 != 0)
 	{
-		MyIP_Bind(sockfd,1234);
-		MyIP_Connect(sockfd,&socketaddr);
-		TCPDEBUGOUT("socket success (%d)\r\n",sockfd);
+		MyIP_Bind(sockfd1,1234);							//绑定本地端口
+		MyIP_Connect(sockfd1,&Socket1);						//启动连接
+		TCPDEBUGOUT("socket success (%d)\r\n",sockfd1);
 	}
 	
-	struct SocketAddr addr2;
-	uint8_t tempip2[4] = {192,168,1,80};
-	memcpy(addr2.ReIP,tempip2,4);
-	addr2.RePort = 8235;
-	sockfd = MyIP_Socket(TCP_SERVER);
-	if(sockfd != 0)
+//	struct SocketAddr Socket2;
+//	Socket2.IP = "192.168.1.80";
+//	Socket2.Port = 80;
+	sockfd2 = MyIP_Socket(TCP_SERVER);						//创建一个TCP服务器
+	if(sockfd2 != 0)
 	{
-		MyIP_Bind(sockfd,1235);
-		MyIP_Connect(sockfd,&addr2);
-		TCPDEBUGOUT("socket success (%d)\r\n",sockfd);
+		MyIP_Bind(sockfd2,1235);							//绑定本地端口
+//		MyIP_Connect(sockfd,&Socket2);
+		TCPDEBUGOUT("socket success (%d)\r\n",sockfd2);
 	}
-	
-
-//	struct SocketAddr socketaddr2;
-//	uint8_t tempip2[4] = {192,168,1,219};
-//	memcpy(socketaddr2.ReIP,tempip2,4);
-//	socketaddr2.RePort = 8234;
-//	socket2 = MyIP_Socket(TCP_CLIENT,&socketaddr2);
-//	if(socket2 != -1)
-//	{
-//		TCPDEBUGOUT("socket success (%d)\r\n",socket2);
-//		MyIP_Bind(socket2,1234);
-//	}
 }
 
 /**
@@ -409,8 +392,27 @@ int MyIP_Connect(uint16_t sockfd,const struct SocketAddr *dest_addr)
 		return 3;
 	
 	//初始化该连接的各个参数
-	memcpy(MyNet[sockfd].Re_IP,dest_addr->ReIP,4);		//初始化远程IP
-	MyNet[sockfd].Re_Port = dest_addr->RePort;			//初始化远程端口
+	int ip[4];
+	if(sscanf(dest_addr->IP,"%d.%d.%d.%d",ip,ip+1,ip+2,ip+3) != 4)
+		return 4;
+	
+	//初始化远程IP
+	for(uint8_t i=0;i<4;i++)
+	{
+		if(ip[i]>=0 && ip[i]<=255)
+		{
+			MyNet[sockfd].Re_IP[i] = ip[i];
+		}
+		else
+		{
+			//IP地址不合法
+			return 5;
+		}
+	}
+	MyNet[sockfd].Re_Port = dest_addr->Port;			//初始化远程端口
+	
+//	memcpy(MyNet[sockfd].Re_IP,dest_addr->ReIP,4);		//初始化远程IP
+//	MyNet[sockfd].Re_Port = dest_addr->RePort;			//初始化远程端口
 	
 	//如果是TCP客户端或者UDP的话
 	if(MyNet[sockfd].Net_Type != TCP_SERVER)
@@ -432,7 +434,7 @@ int MyIP_Connect(uint16_t sockfd,const struct SocketAddr *dest_addr)
 	//为TCP服务器的话,调用listen等待对方连接即可
 	else
 	{
-		return 4;
+		return 6;
 	}
 }
 
